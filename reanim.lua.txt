@@ -7230,6 +7230,12 @@ do
 		Reanimate.PatchmaVoidFloat = val
 		SaveData.PatchmaVoidFloat = val
 	end)
+   UI.CreateSwitch(MainPage, "Fly", false).Changed:Connect(function(val)
+    if SetFlyState then
+        SetFlyState(val)
+    end
+end)
+
 	UI.CreateButton(MainPage, "Force Sit (2x to remove gyro)", 20).Activated:Connect(function()
 		local ch = Reanimate.Character or Player.Character
 		if ch then
@@ -9865,7 +9871,7 @@ local function GetActiveReanimRoot()
 end
 
 -- Fly Toggle Logic
-local function SetFlyState(state)
+function SetFlyState(state)
     flyEnabled = (state ~= nil) and state or not flyEnabled
     
     local targetRoot = GetActiveReanimRoot()
