@@ -7230,11 +7230,57 @@ do
 		Reanimate.PatchmaVoidFloat = val
 		SaveData.PatchmaVoidFloat = val
 	end)
-   UI.CreateSwitch(MainPage, "Fly", false).Changed:Connect(function(val)
-    if SetFlyState then
-        SetFlyState(val)
+   UI.CreateSwitch(MainPage, "Fly", false).Changed:Connect(function(state)
+    local localPlayer = game:GetService("Players").LocalPlayer
+    local char = localPlayer.Character
+    if not char then return end
+    
+    -- Find the actual reanimation root part
+    local root = char:FindFirstChild("ReanimRoot") 
+        or char:FindFirstChild("FlingBlock") 
+        or char:FindFirstChild("Torso") 
+        or char:FindFirstChild("HumanoidRootPart")
+        
+    if not root then return end
+
+    if state then
+        -- Create BodyVelocity to push the reanimated root
+        local bv = Instance.new("BodyVelocity")
+        bv.Name = "ReanimFlyVelocity"
+        bv.Velocity = Vector3.new(0, 0, 0)
+        bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+        bv.Parent = root
+        
+        -- Create BodyGyro to keep it aligned with the camera
+        local bg = Instance.new("BodyGyro")
+        bg.Name = "ReanimFlyGyro"
+        bg.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+        bg.CFrame = root.CFrame
+        bg.Parent = root
+
+        -- Heartbeat loop to follow camera movement
+        _G.ReanimFlyConn = game:GetService("RunService").Heartbeat:Connect(function()
+            if char and root and root.Parent then
+                local cam = workspace.CurrentCamera
+                local hum = char:FindFirstChildOfClass("Humanoid")
+                
+                if hum and hum.MoveDirection.Magnitude > 0 then
+                    bv.Velocity = (cam.CFrame.LookVector * hum.MoveDirection.Z + cam.CFrame.RightVector * hum.MoveDirection.X) * 50
+                    bg.CFrame = cam.CFrame
+                else
+                    bv.Velocity = Vector3.new(0, 0, 0)
+                    bg.CFrame = cam.CFrame
+                end
+            end
+        end)
+    else
+        -- Clean up physics when turned off
+        if _G.ReanimFlyConn then _G.ReanimFlyConn:Disconnect() end
+        if root:FindFirstChild("ReanimFlyVelocity") then root.ReanimFlyVelocity:Destroy() end
+        if root:FindFirstChild("ReanimFlyGyro") then root.ReanimFlyGyro:Destroy() end
     end
 end)
+
 
 	UI.CreateButton(MainPage, "Force Sit (2x to remove gyro)", 20).Activated:Connect(function()
 		local ch = Reanimate.Character or Player.Character
